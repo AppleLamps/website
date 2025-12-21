@@ -1,6 +1,7 @@
 import manifestData from '@/data/manifest.json';
 import DocumentGrid from '@/components/DocumentGrid';
 import Header from '@/components/Header';
+import { getAllDocumentStats } from '@/app/actions';
 
 interface Document {
   id: string;
@@ -11,7 +12,10 @@ interface Document {
 
 const manifest = manifestData as Document[];
 
-export default function Home() {
+export default async function Home() {
+  // Fetch stats server-side (cached for 60 seconds)
+  const stats = await getAllDocumentStats();
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-blue-500/30">
       <Header />
@@ -32,7 +36,7 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <DocumentGrid documents={manifest} />
+          <DocumentGrid documents={manifest} initialStats={stats} />
         )}
       </main>
     </div>

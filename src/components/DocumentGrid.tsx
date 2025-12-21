@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, ChevronDown, SortAsc, Loader2, Heart, MessageCircle } from 'lucide-react';
-import { getAllDocumentStats } from '@/app/actions';
 
 interface Document {
     id: string;
@@ -15,53 +14,38 @@ interface Document {
 
 interface DocumentGridProps {
     documents: Document[];
+    initialStats?: Record<string, { likes: number, comments: number }>;
 }
 
 const ITEMS_PER_PAGE = 24;
+// Number of images to load with priority (above the fold)
+const PRIORITY_IMAGE_COUNT = 6;
 
-export default function DocumentGrid({ documents }: DocumentGridProps) {
+export default function DocumentGrid({ documents, initialStats }: DocumentGridProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'name' | 'pages' | 'likes' | 'comments'>('name');
-    const [stats, setStats] = useState<Record<string, { likes: number, comments: number }> | null>(null);
+    // Use initialStats if provided (server-side), otherwise default to empty object
+    const stats = useMemo(() => initialStats ?? {}, [initialStats]);
 
     // Infinite scroll state
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
     const filteredLengthRef = useRef(0);
     const observerRef = useRef<IntersectionObserver | null>(null);
 
-    useEffect(() => {
-        let cancelled = false;
-
-        (async () => {
-            try {
-                const result = await getAllDocumentStats();
-                if (!cancelled) setStats(result);
-            } catch (error) {
-                console.error('getAllDocumentStats failed:', error);
-                // Don’t block the grid; just show 0s.
-                if (!cancelled) setStats({});
-            }
-        })();
-
-        return () => {
-            cancelled = true;
-        };
-    }, []);
-
     const filteredDocuments = useMemo(() => {
-        let docs = documents.filter((doc) =>
+        const docs = documents.filter((doc) =>
             doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             doc.id.toLowerCase().includes(searchQuery.toLowerCase())
         );
 
         if (sortBy === 'name') {
-            docs.sort((a, b) => a.title.localeCompare(b.title));
+            return [...docs].sort((a, b) => a.title.localeCompare(b.title));
         } else if (sortBy === 'pages') {
-            docs.sort((a, b) => b.pageCount - a.pageCount);
+            return [...docs].sort((a, b) => b.pageCount - a.pageCount);
         } else if (sortBy === 'likes') {
-            docs.sort((a, b) => (stats?.[b.id]?.likes || 0) - (stats?.[a.id]?.likes || 0));
+            return [...docs].sort((a, b) => (stats[b.id]?.likes || 0) - (stats[a.id]?.likes || 0));
         } else if (sortBy === 'comments') {
-            docs.sort((a, b) => (stats?.[b.id]?.comments || 0) - (stats?.[a.id]?.comments || 0));
+            return [...docs].sort((a, b) => (stats[b.id]?.comments || 0) - (stats[a.id]?.comments || 0));
         }
 
         return docs;
@@ -104,17 +88,18 @@ export default function DocumentGrid({ documents }: DocumentGridProps) {
         };
     }, []);
 
-    // Reset visible count when filters change
-    useEffect(() => {
-        setVisibleCount(ITEMS_PER_PAGE);
-    }, [searchQuery, sortBy]);
-
     const visibleDocuments = useMemo(() => {
         return filteredDocuments.slice(0, visibleCount);
     }, [filteredDocuments, visibleCount]);
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(e.target.value);
+        setVisibleCount(ITEMS_PER_PAGE);
+    };
+
+    const handleSortChange = (newSort: 'name' | 'pages' | 'likes' | 'comments') => {
+        setSortBy(newSort);
+        setVisibleCount(ITEMS_PER_PAGE);
     };
 
     return (
@@ -153,10 +138,10 @@ export default function DocumentGrid({ documents }: DocumentGridProps) {
 
                         <div className="absolute right-0 top-full pt-2 w-48 hidden group-hover:block z-50">
                             <div className="bg-card border border-border rounded-lg shadow-xl overflow-hidden">
-                                <button onClick={() => setSortBy('name')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Name</button>
-                                <button onClick={() => setSortBy('pages')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Page Count</button>
-                                <button onClick={() => setSortBy('likes')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Most Liked</button>
-                                <button onClick={() => setSortBy('comments')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Most Discussed</button>
+                                <button onClick={() => handleSortChange('name')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Name</button>
+                                <button onClick={() => handleSortChange('pages')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Page Count</button>
+                                <button onClick={() => handleSortChange('likes')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Most Liked</button>
+                                <button onClick={() => handleSortChange('comments')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Most Discussed</button>
                             </div>
                         </div>
                     </div>
@@ -168,27 +153,19 @@ export default function DocumentGrid({ documents }: DocumentGridProps) {
             </div>
 
             {/* Grid */}
-            {!stats ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                    {Array(visibleCount).fill(0).map((_, i) => (
-                        <div key={i} className="flex flex-col gap-2 animate-pulse">
-                            <div className="aspect-[3/4] w-full bg-card rounded-xl border border-border" />
-                            <div className="h-3 w-3/4 bg-card rounded-full mx-1" />
-                        </div>
-                    ))}
-                </div>
-            ) : visibleDocuments.length > 0 ? (
+            {visibleDocuments.length > 0 ? (
                 <>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                        {visibleDocuments.map((doc) => (
+                        {visibleDocuments.map((doc, index) => (
                             <Link key={doc.id} href={`/viewer/${doc.id}`} className="group flex flex-col gap-2">
                                 <div className="aspect-[3/4] w-full bg-card rounded-xl overflow-hidden border border-border group-hover:border-gray-400 dark:group-hover:border-gray-600 transition-colors relative">
                                     <Image
                                         src={doc.thumbnail}
                                         alt={doc.title}
                                         fill
+                                        priority={index < PRIORITY_IMAGE_COUNT}
                                         className="object-cover opacity-90 dark:opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-                                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
                                     />
 
                                     {/* Overlay Stats */}
@@ -222,7 +199,7 @@ export default function DocumentGrid({ documents }: DocumentGridProps) {
             ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-gray-500">
                     <Search className="h-12 w-12 mb-4 opacity-20" />
-                    <p>No documents found matching "{searchQuery}"</p>
+                    <p>No documents found matching &quot;{searchQuery}&quot;</p>
                 </div>
             )}
         </div>

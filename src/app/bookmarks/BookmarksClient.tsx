@@ -14,9 +14,10 @@ interface Document {
 
 interface BookmarksClientProps {
     allDocuments: Document[];
+    initialStats?: Record<string, { likes: number, comments: number }>;
 }
 
-export default function BookmarksClient({ allDocuments }: BookmarksClientProps) {
+export default function BookmarksClient({ allDocuments, initialStats }: BookmarksClientProps) {
     const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -83,7 +84,7 @@ export default function BookmarksClient({ allDocuments }: BookmarksClientProps) 
                     </div>
                 </div>
             ) : (
-                <DocumentGrid documents={bookmarkedDocuments} />
+                <DocumentGrid documents={bookmarkedDocuments} initialStats={initialStats} />
             )}
         </div>
     );

@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://epstein-files.com'),
   title: "Epstein Files Browser - Public Document Archive",
   description: "Browse and search thousands of publicly released documents from the Epstein case. Community-driven archive with comments and discussion.",
   keywords: "Epstein files, public documents, legal documents, DOJ files, document archive",

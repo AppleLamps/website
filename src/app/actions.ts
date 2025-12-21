@@ -118,7 +118,7 @@ export async function likeComment(commentId: number, documentId: string) {
     revalidatePath(`/viewer/${documentId}`);
 }
 
-export async function getAllDocumentStats(): Promise<Record<string, { likes: number, comments: number }>> {
+async function fetchAllDocumentStats(): Promise<Record<string, { likes: number, comments: number }>> {
     try {
         const likesResult = await sql`SELECT document_id, likes FROM document_stats`;
 
@@ -146,3 +146,10 @@ export async function getAllDocumentStats(): Promise<Record<string, { likes: num
         return {};
     }
 }
+
+// Cache stats for 60 seconds to reduce database load
+export const getAllDocumentStats = unstable_cache(
+    fetchAllDocumentStats,
+    ['all-document-stats'],
+    { revalidate: 60 }
+);
