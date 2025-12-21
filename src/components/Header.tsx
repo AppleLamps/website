@@ -12,6 +12,12 @@ export default function Header() {
                     </Link>
                 </div>
                 <div className="flex items-center gap-4">
+                    <Link
+                        href="/bookmarks"
+                        className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+                    >
+                        Bookmarks
+                    </Link>
                     <ThemeToggle />
                     <Link
                         href="https://github.com/RhysSullivan/epstein-files-browser"
