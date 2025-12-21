@@ -42,24 +42,24 @@ function CommentItem({
     return (
         <div className="flex gap-3 mt-6">
             <div className="flex-shrink-0">
-                <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700">
-                    <User className="w-4 h-4 text-gray-400" />
+                <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                    <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 </div>
             </div>
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-sm text-gray-200">@{comment.username}</span>
-                    <span className="text-xs text-gray-500">
+                    <span className="font-semibold text-sm text-foreground">@{comment.username}</span>
+                    <span className="text-xs text-muted">
                         {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                     </span>
                 </div>
-                <p className="text-gray-300 text-sm whitespace-pre-wrap break-words">{comment.content}</p>
+                <p className="text-foreground/90 text-sm whitespace-pre-wrap break-words">{comment.content}</p>
 
                 <div className="flex items-center gap-4 mt-2">
                     <button
                         onClick={handleLike}
                         disabled={hasLiked || isPending}
-                        className={`flex items-center gap-1.5 text-xs transition-colors group ${hasLiked ? 'text-pink-500' : 'text-gray-500 hover:text-pink-500'
+                        className={`flex items-center gap-1.5 text-xs transition-colors group ${hasLiked ? 'text-pink-500' : 'text-muted hover:text-pink-500'
                             }`}
                     >
                         <Heart className={`w-3.5 h-3.5 ${hasLiked ? 'fill-current' : 'group-hover:fill-pink-500'}`} />
@@ -68,7 +68,7 @@ function CommentItem({
 
                     <button
                         onClick={() => onReply(comment.id)}
-                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-blue-400 transition-colors"
+                        className="flex items-center gap-1.5 text-xs text-muted hover:text-blue-400 transition-colors"
                     >
                         <Reply className="w-3.5 h-3.5" />
                         <span>Reply</span>
@@ -124,7 +124,7 @@ export default function CommentSection({ documentId, initialComments }: CommentS
     // Recursive render helper
     const renderCommentTree = (comments: Comment[], isReply = false) => {
         return comments.map((comment) => (
-            <div key={comment.id} className={isReply ? 'ml-8 border-l-2 border-gray-800 pl-4' : ''}>
+            <div key={comment.id} className={isReply ? 'ml-8 border-l-2 border-border pl-4' : ''}>
                 <CommentItem
                     comment={comment}
                     documentId={documentId}
@@ -136,7 +136,7 @@ export default function CommentSection({ documentId, initialComments }: CommentS
                     <form onSubmit={(e) => handleSubmit(e, comment.id)} className="mt-3 ml-11 animate-in fade-in slide-in-from-top-2 mb-4">
                         <div className="flex gap-2">
                             {isUsernameLocked ? (
-                                <div className="bg-[#1a1a1a] border border-gray-800 rounded px-3 py-2 text-sm text-gray-400 w-1/3 flex items-center justify-between">
+                                <div className="bg-background border border-border rounded px-3 py-2 text-sm text-muted w-1/3 flex items-center justify-between">
                                     <span className="truncate">@{username}</span>
                                 </div>
                             ) : (
@@ -145,7 +145,7 @@ export default function CommentSection({ documentId, initialComments }: CommentS
                                     placeholder="Your X username"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
-                                    className="bg-[#1a1a1a] border border-gray-800 rounded px-3 py-2 text-sm text-white w-1/3 focus:outline-none focus:border-blue-500"
+                                    className="bg-background border border-border rounded px-3 py-2 text-sm text-foreground w-1/3 focus:outline-none focus:border-blue-500"
                                     required
                                 />
                             )}
@@ -154,14 +154,14 @@ export default function CommentSection({ documentId, initialComments }: CommentS
                                 placeholder="Write a reply..."
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
-                                className="bg-[#1a1a1a] border border-gray-800 rounded px-3 py-2 text-sm text-white flex-1 focus:outline-none focus:border-blue-500"
+                                className="bg-background border border-border rounded px-3 py-2 text-sm text-foreground flex-1 focus:outline-none focus:border-blue-500"
                                 required
                                 autoFocus
                             />
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="bg-white text-black hover:bg-gray-200 px-3 py-2 rounded text-sm disabled:opacity-50 transition-colors"
+                                className="bg-foreground text-background hover:bg-gray-200 dark:hover:bg-gray-300 px-3 py-2 rounded text-sm disabled:opacity-50 transition-colors"
                             >
                                 <Send className="w-4 h-4" />
                             </button>
@@ -185,7 +185,7 @@ export default function CommentSection({ documentId, initialComments }: CommentS
                 <div className="flex justify-center mb-8">
                     <button
                         onClick={() => setIsCommenting(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-[#1a1a1a] hover:bg-[#252525] text-gray-200 rounded-full border border-gray-800 transition-all hover:border-gray-700 shadow-lg"
+                        className="flex items-center gap-2 px-6 py-3 bg-card hover:bg-gray-100 dark:hover:bg-[#252525] text-foreground rounded-full border border-border transition-all hover:border-gray-400 dark:hover:border-gray-700 shadow-lg"
                     >
                         <MessageCircle className="w-4 h-4" />
                         <span>Add a Comment</span>
@@ -193,53 +193,53 @@ export default function CommentSection({ documentId, initialComments }: CommentS
                 </div>
             )}
 
-            <div className="border-t border-gray-800 pt-8">
-                <h3 className="text-xl font-semibold text-white flex items-center gap-2 mb-6">
+            <div className="border-t border-border pt-8">
+                <h3 className="text-xl font-semibold text-foreground flex items-center gap-2 mb-6">
                     <MessageCircle className="w-5 h-5" />
                     Discussion
                 </h3>
 
                 {/* Main Comment Form */}
                 {isCommenting && (
-                    <form onSubmit={(e) => handleSubmit(e)} className="bg-[#111] p-4 rounded-xl border border-gray-800 mb-8 animate-in fade-in slide-in-from-top-4">
+                    <form onSubmit={(e) => handleSubmit(e)} className="bg-card p-4 rounded-xl border border-border mb-8 animate-in fade-in slide-in-from-top-4">
                         <div className="space-y-3">
                             <div>
-                                <label className="block text-xs text-gray-500 mb-1 uppercase tracking-wider font-semibold">Username</label>
+                                <label className="block text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Username</label>
                                 {isUsernameLocked ? (
-                                    <div className="flex items-center justify-between bg-[#1a1a1a] border border-gray-800 rounded-lg px-3 py-2">
-                                        <div className="flex items-center gap-2 text-sm text-white">
-                                            <span className="text-gray-500">@</span>
+                                    <div className="flex items-center justify-between bg-background border border-border rounded-lg px-3 py-2">
+                                        <div className="flex items-center gap-2 text-sm text-foreground">
+                                            <span className="text-muted">@</span>
                                             <span className="font-medium">{username}</span>
                                         </div>
                                         <button
                                             type="button"
                                             onClick={handleUnlockUsername}
-                                            className="text-xs text-gray-500 hover:text-white transition-colors"
+                                            className="text-xs text-muted hover:text-foreground transition-colors"
                                         >
                                             Change
                                         </button>
                                     </div>
                                 ) : (
                                     <div className="relative">
-                                        <span className="absolute left-3 top-2.5 text-gray-500 text-sm">@</span>
+                                        <span className="absolute left-3 top-2.5 text-muted text-sm">@</span>
                                         <input
                                             type="text"
                                             placeholder="elonmusk"
                                             value={username}
                                             onChange={(e) => setUsername(e.target.value)}
-                                            className="w-full bg-[#1a1a1a] border border-gray-800 rounded-lg pl-7 pr-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                                            className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-sm text-foreground focus:outline-none focus:border-blue-500 transition-colors"
                                             required
                                         />
                                     </div>
                                 )}
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-500 mb-1 uppercase tracking-wider font-semibold">Comment</label>
+                                <label className="block text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Comment</label>
                                 <textarea
                                     placeholder="What do you think about this document?"
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
-                                    className="w-full bg-[#1a1a1a] border border-gray-800 rounded-lg px-3 py-2 text-sm text-white min-h-[80px] focus:outline-none focus:border-blue-500 transition-colors resize-y"
+                                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground min-h-[80px] focus:outline-none focus:border-blue-500 transition-colors resize-y"
                                     required
                                 />
                             </div>
@@ -247,14 +247,14 @@ export default function CommentSection({ documentId, initialComments }: CommentS
                                 <button
                                     type="button"
                                     onClick={() => setIsCommenting(false)}
-                                    className="text-gray-400 hover:text-white px-4 py-2 text-sm font-medium transition-colors"
+                                    className="text-muted hover:text-foreground px-4 py-2 text-sm font-medium transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="bg-white text-black hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50 transition-colors"
+                                    className="bg-foreground text-background hover:bg-gray-200 dark:hover:bg-gray-300 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50 transition-colors"
                                 >
                                     {isSubmitting ? 'Posting...' : 'Post Comment'}
                                     <Send className="w-4 h-4" />
@@ -267,7 +267,7 @@ export default function CommentSection({ documentId, initialComments }: CommentS
                 {/* Comments List */}
                 <div className="space-y-2">
                     {initialComments.length === 0 ? (
-                        <p className="text-center text-gray-500 py-8">No comments yet. Be the first to share your thoughts!</p>
+                        <p className="text-center text-muted py-8">No comments yet. Be the first to share your thoughts!</p>
                     ) : (
                         renderCommentTree(initialComments)
                     )}

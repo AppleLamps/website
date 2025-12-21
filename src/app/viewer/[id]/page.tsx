@@ -5,7 +5,9 @@ import { notFound } from 'next/navigation';
 import DocumentViewer from '@/components/DocumentViewer';
 import CommentSection from '@/components/CommentSection';
 import LikeButton from '@/components/LikeButton';
+import BookmarkButton from '@/components/BookmarkButton';
 import { getComments, getDocumentLikes } from '@/app/actions';
+import { Metadata } from 'next';
 
 interface Document {
     id: string;
@@ -16,6 +18,27 @@ interface Document {
 }
 
 const manifest = manifestData as Document[];
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    const { id } = await params;
+    const doc = manifest.find((d) => d.id === id);
+
+    if (!doc) {
+        return {
+            title: "Document Not Found",
+        };
+    }
+
+    return {
+        title: `${doc.title} - Epstein Files Browser`,
+        description: `View and discuss "${doc.title}", a ${doc.pageCount}-page document from the public Epstein case archive.`,
+        openGraph: {
+            title: doc.title,
+            description: `Public document archive: ${doc.title}`,
+            images: [doc.thumbnail],
+        },
+    };
+}
 
 // export async function generateStaticParams() {
 //     return manifest.map((doc) => ({
@@ -47,24 +70,25 @@ export default async function ViewerPage({ params }: { params: Promise<{ id: str
     ]);
 
     return (
-        <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
+        <div className="min-h-screen bg-background text-foreground flex flex-col">
             {/* Header */}
-            <header className="sticky top-0 z-20 w-full border-b border-gray-800 bg-black/50 backdrop-blur-xl px-4 py-3 flex items-center justify-between shadow-sm">
+            <header className="sticky top-0 z-20 w-full border-b border-border bg-background/50 backdrop-blur-xl px-4 py-3 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-4">
-                    <Link href="/" className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-300 hover:text-white">
+                    <Link href="/" className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors text-muted hover:text-foreground">
                         <ChevronLeft className="w-5 h-5" />
                     </Link>
-                    <h1 className="text-base font-medium truncate max-w-[200px] sm:max-w-md text-gray-200">
+                    <h1 className="text-base font-medium truncate max-w-[200px] sm:max-w-md text-foreground">
                         {doc.title}
                     </h1>
                 </div>
                 <div className="flex items-center gap-4">
+                    <BookmarkButton documentId={id} />
                     <LikeButton documentId={id} initialLikes={likes} />
                     <div className="flex items-center gap-2">
-                        <span className="hidden sm:inline text-xs font-mono text-gray-500 mr-2">
+                        <span className="hidden sm:inline text-xs font-mono text-muted mr-2">
                             {doc.pageCount} PAGES
                         </span>
-                        <Link href="/" className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-300 hover:text-white" title="Back to Gallery">
+                        <Link href="/" className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors text-muted hover:text-foreground" title="Back to Gallery">
                             <Grid className="w-5 h-5" />
                         </Link>
                     </div>

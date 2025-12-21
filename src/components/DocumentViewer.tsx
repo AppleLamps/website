@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ZoomIn, ZoomOut, ChevronUp, ChevronDown } from 'lucide-react';
+import { ZoomIn, ZoomOut, ChevronUp, ChevronDown, Share2, Check } from 'lucide-react';
+import { useSwipeable } from 'react-swipeable';
 
 interface DocumentViewerProps {
     pages: string[];
@@ -16,10 +17,41 @@ export default function DocumentViewer({ pages, title, prevId, nextId }: Documen
     const router = useRouter();
     const [zoom, setZoom] = useState(1);
     const [currentPage, setCurrentPage] = useState(1);
+    const [copied, setCopied] = useState(false);
     const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+    const handlers = useSwipeable({
+        onSwipedLeft: () => nextId && router.push(`/viewer/${nextId}`),
+        onSwipedRight: () => prevId && router.push(`/viewer/${prevId}`),
+        preventScrollOnSwipe: true,
+        trackMouse: true,
+    });
 
     const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 3));
     const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.5));
+
+    const handleShare = async () => {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: title,
+                    text: `Check out this document: ${title}`,
+                    url: window.location.href,
+                });
+            } catch (err) {
+                console.error('Error sharing:', err);
+            }
+        } else {
+            // Fallback: Copy to clipboard
+            try {
+                await navigator.clipboard.writeText(window.location.href);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+            }
+        }
+    };
 
     const scrollToPage = (pageIndex: number) => {
         const element = pageRefs.current[pageIndex];
@@ -74,15 +106,15 @@ export default function DocumentViewer({ pages, title, prevId, nextId }: Documen
     }, [pages]);
 
     return (
-        <div className="relative w-full max-w-6xl mx-auto flex flex-col items-center gap-8 pb-20">
+        <div {...handlers} className="relative w-full max-w-6xl mx-auto flex flex-col items-center gap-8 pb-20">
             {/* Floating Controls */}
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1a1a]/90 backdrop-blur text-gray-200 px-4 py-2 rounded-full shadow-xl flex items-center gap-4 border border-gray-800">
-                <div className="flex items-center gap-2 border-r border-gray-800 pr-4">
-                    <button onClick={handleZoomOut} className="p-1.5 hover:bg-white/10 rounded-full transition-colors" title="Zoom Out">
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card/90 backdrop-blur text-foreground px-4 py-2 rounded-full shadow-xl flex items-center gap-4 border border-border">
+                <div className="flex items-center gap-2 border-r border-border pr-4">
+                    <button onClick={handleZoomOut} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors" title="Zoom Out">
                         <ZoomOut className="w-4 h-4" />
                     </button>
-                    <span className="text-xs font-mono w-12 text-center text-gray-400">{Math.round(zoom * 100)}%</span>
-                    <button onClick={handleZoomIn} className="p-1.5 hover:bg-white/10 rounded-full transition-colors" title="Zoom In">
+                    <span className="text-xs font-mono w-12 text-center text-muted">{Math.round(zoom * 100)}%</span>
+                    <button onClick={handleZoomIn} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors" title="Zoom In">
                         <ZoomIn className="w-4 h-4" />
                     </button>
                 </div>
@@ -91,19 +123,29 @@ export default function DocumentViewer({ pages, title, prevId, nextId }: Documen
                     <button
                         onClick={() => scrollToPage(Math.max(0, currentPage - 2))}
                         disabled={currentPage === 1}
-                        className="p-1.5 hover:bg-white/10 rounded-full disabled:opacity-30 transition-colors"
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full disabled:opacity-30 transition-colors"
                     >
                         <ChevronUp className="w-4 h-4" />
                     </button>
-                    <span className="text-xs font-mono text-gray-400">
+                    <span className="text-xs font-mono text-muted">
                         {currentPage} / {pages.length}
                     </span>
                     <button
                         onClick={() => scrollToPage(Math.min(pages.length - 1, currentPage))}
                         disabled={currentPage === pages.length}
-                        className="p-1.5 hover:bg-white/10 rounded-full disabled:opacity-30 transition-colors"
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full disabled:opacity-30 transition-colors"
                     >
                         <ChevronDown className="w-4 h-4" />
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2 border-l border-border pl-4">
+                    <button
+                        onClick={handleShare}
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors text-muted hover:text-foreground"
+                        title="Share Document"
+                    >
+                        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
                     </button>
                 </div>
             </div>

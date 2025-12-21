@@ -1,7 +1,8 @@
 'use server';
 
 import { neon } from '@neondatabase/serverless';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, unstable_cache } from 'next/cache';
+import DOMPurify from 'isomorphic-dompurify';
 
 if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is not defined');
@@ -77,9 +78,12 @@ export async function getComments(documentId: string): Promise<Comment[]> {
 export async function addComment(documentId: string, username: string, content: string, parentId: number | null = null) {
     if (!username || !content) return;
 
+    const sanitizedUsername = DOMPurify.sanitize(username.trim());
+    const sanitizedContent = DOMPurify.sanitize(content.trim());
+
     await sql`
     INSERT INTO comments (document_id, username, content, parent_id)
-    VALUES (${documentId}, ${username}, ${content}, ${parentId})
+    VALUES (${documentId}, ${sanitizedUsername}, ${sanitizedContent}, ${parentId})
   `;
 
     revalidatePath(`/viewer/${documentId}`);
@@ -115,25 +119,30 @@ export async function likeComment(commentId: number, documentId: string) {
 }
 
 export async function getAllDocumentStats(): Promise<Record<string, { likes: number, comments: number }>> {
-    const likesResult = await sql`SELECT document_id, likes FROM document_stats`;
+    try {
+        const likesResult = await sql`SELECT document_id, likes FROM document_stats`;
 
-    const commentsResult = await sql`
-        SELECT document_id, COUNT(*) as count 
-        FROM comments 
-        GROUP BY document_id
-    `;
+        const commentsResult = await sql`
+            SELECT document_id, COUNT(*) as count 
+            FROM comments 
+            GROUP BY document_id
+        `;
 
-    const stats: Record<string, { likes: number, comments: number }> = {};
+        const stats: Record<string, { likes: number, comments: number }> = {};
 
-    likesResult.forEach((row: any) => {
-        if (!stats[row.document_id]) stats[row.document_id] = { likes: 0, comments: 0 };
-        stats[row.document_id].likes = row.likes;
-    });
+        likesResult.forEach((row: any) => {
+            if (!stats[row.document_id]) stats[row.document_id] = { likes: 0, comments: 0 };
+            stats[row.document_id].likes = row.likes;
+        });
 
-    commentsResult.forEach((row: any) => {
-        if (!stats[row.document_id]) stats[row.document_id] = { likes: 0, comments: 0 };
-        stats[row.document_id].comments = parseInt(row.count);
-    });
+        commentsResult.forEach((row: any) => {
+            if (!stats[row.document_id]) stats[row.document_id] = { likes: 0, comments: 0 };
+            stats[row.document_id].comments = parseInt(row.count);
+        });
 
-    return stats;
+        return stats;
+    } catch (error) {
+        console.error('Error fetching document stats:', error);
+        return {};
+    }
 }

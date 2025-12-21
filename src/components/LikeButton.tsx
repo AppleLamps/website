@@ -41,7 +41,7 @@ export default function LikeButton({ documentId, initialLikes }: LikeButtonProps
         flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300
         ${hasLiked
                     ? 'bg-pink-500/10 text-pink-500 border-pink-500/50'
-                    : 'bg-[#1a1a1a] text-gray-400 border-gray-800 hover:border-pink-500/50 hover:text-pink-500 hover:bg-pink-500/5'
+                    : 'bg-card text-muted border-border hover:border-pink-500/50 hover:text-pink-500 hover:bg-pink-500/5'
                 }
         border
       `}

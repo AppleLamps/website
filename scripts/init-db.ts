@@ -6,17 +6,17 @@ import path from 'path';
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL is not defined');
+  throw new Error('DATABASE_URL is not defined');
 }
 
 const sql = neon(process.env.DATABASE_URL);
 
 async function initDb() {
-    try {
-        console.log('Initializing database...');
+  try {
+    console.log('Initializing database...');
 
-        // Create comments table
-        await sql`
+    // Create comments table
+    await sql`
       CREATE TABLE IF NOT EXISTS comments (
         id SERIAL PRIMARY KEY,
         document_id TEXT NOT NULL,
@@ -27,22 +27,28 @@ async function initDb() {
         likes INTEGER DEFAULT 0
       );
     `;
-        console.log('Created comments table');
+    console.log('Created comments table');
 
-        // Create document_stats table for document likes
-        await sql`
+    // Create document_stats table for document likes
+    await sql`
       CREATE TABLE IF NOT EXISTS document_stats (
         document_id TEXT PRIMARY KEY,
         likes INTEGER DEFAULT 0
       );
     `;
-        console.log('Created document_stats table');
+    console.log('Created document_stats table');
 
-        console.log('Database initialization completed successfully.');
-    } catch (error) {
-        console.error('Error initializing database:', error);
-        process.exit(1);
-    }
+    // Create Indexes
+    await sql`CREATE INDEX IF NOT EXISTS idx_comments_document_id ON comments(document_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments(parent_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at DESC)`;
+    console.log('Created database indexes');
+
+    console.log('Database initialization completed successfully.');
+  } catch (error) {
+    console.error('Error initializing database:', error);
+    process.exit(1);
+  }
 }
 
 initDb();

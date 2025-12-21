@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, ChevronDown, SortAsc, Loader2, Heart, MessageCircle } from 'lucide-react';
@@ -22,14 +22,30 @@ const ITEMS_PER_PAGE = 24;
 export default function DocumentGrid({ documents }: DocumentGridProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'name' | 'pages' | 'likes' | 'comments'>('name');
-    const [stats, setStats] = useState<Record<string, { likes: number, comments: number }>>({});
+    const [stats, setStats] = useState<Record<string, { likes: number, comments: number }> | null>(null);
 
     // Infinite scroll state
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
-    const observerTarget = useRef<HTMLDivElement>(null);
+    const filteredLengthRef = useRef(0);
+    const observerRef = useRef<IntersectionObserver | null>(null);
 
     useEffect(() => {
-        getAllDocumentStats().then(setStats);
+        let cancelled = false;
+
+        (async () => {
+            try {
+                const result = await getAllDocumentStats();
+                if (!cancelled) setStats(result);
+            } catch (error) {
+                console.error('getAllDocumentStats failed:', error);
+                // Don’t block the grid; just show 0s.
+                if (!cancelled) setStats({});
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     const filteredDocuments = useMemo(() => {
@@ -43,13 +59,50 @@ export default function DocumentGrid({ documents }: DocumentGridProps) {
         } else if (sortBy === 'pages') {
             docs.sort((a, b) => b.pageCount - a.pageCount);
         } else if (sortBy === 'likes') {
-            docs.sort((a, b) => (stats[b.id]?.likes || 0) - (stats[a.id]?.likes || 0));
+            docs.sort((a, b) => (stats?.[b.id]?.likes || 0) - (stats?.[a.id]?.likes || 0));
         } else if (sortBy === 'comments') {
-            docs.sort((a, b) => (stats[b.id]?.comments || 0) - (stats[a.id]?.comments || 0));
+            docs.sort((a, b) => (stats?.[b.id]?.comments || 0) - (stats?.[a.id]?.comments || 0));
         }
 
         return docs;
     }, [documents, searchQuery, sortBy, stats]);
+
+    // Update ref when filtered documents change
+    useEffect(() => {
+        filteredLengthRef.current = filteredDocuments.length;
+    }, [filteredDocuments.length]);
+
+    // Keep the observer callback stable, but always read latest values from refs.
+    const setObserverTarget = useCallback((node: HTMLDivElement | null) => {
+        if (observerRef.current) {
+            observerRef.current.disconnect();
+            observerRef.current = null;
+        }
+
+        if (!node) return;
+
+        observerRef.current = new IntersectionObserver(
+            (entries) => {
+                if (!entries[0]?.isIntersecting) return;
+
+                setVisibleCount((prev) => {
+                    const maxLength = filteredLengthRef.current;
+                    if (prev >= maxLength) return prev;
+                    return Math.min(prev + ITEMS_PER_PAGE, maxLength);
+                });
+            },
+            { threshold: 0.1, rootMargin: '100px' }
+        );
+
+        observerRef.current.observe(node);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            observerRef.current?.disconnect();
+            observerRef.current = null;
+        };
+    }, []);
 
     // Reset visible count when filters change
     useEffect(() => {
@@ -64,37 +117,18 @@ export default function DocumentGrid({ documents }: DocumentGridProps) {
         setSearchQuery(e.target.value);
     };
 
-    // Infinite scroll handler
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && visibleCount < filteredDocuments.length) {
-                    // Load more items
-                    setVisibleCount((prev) => Math.min(prev + ITEMS_PER_PAGE, filteredDocuments.length));
-                }
-            },
-            { threshold: 0.1, rootMargin: '100px' }
-        );
-
-        if (observerTarget.current) {
-            observer.observe(observerTarget.current);
-        }
-
-        return () => observer.disconnect();
-    }, [visibleCount, filteredDocuments.length]);
-
     return (
         <div className="space-y-6">
             {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-[#111] p-4 rounded-xl border border-gray-800 sticky top-20 z-40 shadow-xl shadow-black/20 backdrop-blur-sm bg-[#111]/90">
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card p-4 rounded-xl border border-border sticky top-20 z-40 shadow-xl shadow-black/5 backdrop-blur-sm bg-card/90">
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <div className="relative flex-1 sm:w-64">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-4 w-4 text-gray-500" />
+                            <Search className="h-4 w-4 text-muted" />
                         </div>
                         <input
                             type="text"
-                            className="block w-full pl-9 pr-3 py-2 bg-[#1a1a1a] border border-gray-800 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-600 focus:border-gray-600 transition-colors"
+                            className="block w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder-muted focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400 transition-colors"
                             placeholder="Search files..."
                             value={searchQuery}
                             onChange={handleSearch}
@@ -105,7 +139,7 @@ export default function DocumentGrid({ documents }: DocumentGridProps) {
                 <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
                     <div className="relative group">
                         <button
-                            className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] border border-gray-800 rounded-lg text-sm text-gray-300 hover:bg-[#222] transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222] transition-colors"
                         >
                             <SortAsc className="h-4 w-4" />
                             <span>
@@ -118,38 +152,47 @@ export default function DocumentGrid({ documents }: DocumentGridProps) {
                         </button>
 
                         <div className="absolute right-0 top-full pt-2 w-48 hidden group-hover:block z-50">
-                            <div className="bg-[#1a1a1a] border border-gray-800 rounded-lg shadow-xl overflow-hidden">
-                                <button onClick={() => setSortBy('name')} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-[#222] hover:text-white">Name</button>
-                                <button onClick={() => setSortBy('pages')} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-[#222] hover:text-white">Page Count</button>
-                                <button onClick={() => setSortBy('likes')} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-[#222] hover:text-white">Most Liked</button>
-                                <button onClick={() => setSortBy('comments')} className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-[#222] hover:text-white">Most Discussed</button>
+                            <div className="bg-card border border-border rounded-lg shadow-xl overflow-hidden">
+                                <button onClick={() => setSortBy('name')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Name</button>
+                                <button onClick={() => setSortBy('pages')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Page Count</button>
+                                <button onClick={() => setSortBy('likes')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Most Liked</button>
+                                <button onClick={() => setSortBy('comments')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Most Discussed</button>
                             </div>
                         </div>
                     </div>
 
-                    <div className="px-3 py-2 bg-[#1a1a1a] border border-gray-800 rounded-lg text-sm font-mono text-gray-400">
+                    <div className="px-3 py-2 bg-background border border-border rounded-lg text-sm font-mono text-muted">
                         {filteredDocuments.length.toLocaleString()} files
                     </div>
                 </div>
             </div>
 
             {/* Grid */}
-            {visibleDocuments.length > 0 ? (
+            {!stats ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                    {Array(visibleCount).fill(0).map((_, i) => (
+                        <div key={i} className="flex flex-col gap-2 animate-pulse">
+                            <div className="aspect-[3/4] w-full bg-card rounded-xl border border-border" />
+                            <div className="h-3 w-3/4 bg-card rounded-full mx-1" />
+                        </div>
+                    ))}
+                </div>
+            ) : visibleDocuments.length > 0 ? (
                 <>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                         {visibleDocuments.map((doc) => (
                             <Link key={doc.id} href={`/viewer/${doc.id}`} className="group flex flex-col gap-2">
-                                <div className="aspect-[3/4] w-full bg-[#111] rounded-xl overflow-hidden border border-gray-800 group-hover:border-gray-600 transition-colors relative">
+                                <div className="aspect-[3/4] w-full bg-card rounded-xl overflow-hidden border border-border group-hover:border-gray-400 dark:group-hover:border-gray-600 transition-colors relative">
                                     <Image
                                         src={doc.thumbnail}
                                         alt={doc.title}
                                         fill
-                                        className="object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                                        className="object-cover opacity-90 dark:opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
                                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                                     />
 
                                     {/* Overlay Stats */}
-                                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between text-xs text-gray-300">
+                                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between text-xs text-white">
                                         <div className="flex items-center gap-1">
                                             <Heart className="w-3 h-3 fill-current" />
                                             <span>{stats[doc.id]?.likes || 0}</span>
@@ -161,7 +204,7 @@ export default function DocumentGrid({ documents }: DocumentGridProps) {
                                     </div>
                                 </div>
                                 <div className="px-1">
-                                    <h3 className="text-xs font-mono text-gray-400 group-hover:text-white truncate transition-colors">
+                                    <h3 className="text-xs font-mono text-muted group-hover:text-foreground truncate transition-colors">
                                         {doc.title}
                                     </h3>
                                 </div>
@@ -171,7 +214,7 @@ export default function DocumentGrid({ documents }: DocumentGridProps) {
 
                     {/* Loading trigger / indicator */}
                     {visibleCount < filteredDocuments.length && (
-                        <div ref={observerTarget} className="flex justify-center py-8">
+                        <div ref={setObserverTarget} className="flex justify-center py-8">
                             <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
                         </div>
                     )}
