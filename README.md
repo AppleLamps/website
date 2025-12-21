@@ -1,36 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PDF to Image Archive Website
+
+This project is a Next.js application designed to host and display thousands of PDF documents as high-quality WebP images. It features a robust gallery with sorting options, a high-performance document viewer, and interactive community features like comments and likes.
+
+## Features
+
+- **Batch Conversion**: Script to convert PDFs to optimized WebP images.
+- **Gallery View**: Browse all processed documents with sorting (Most Liked, Most Discussed, Newest, Oldest).
+- **Document Viewer**: High-performance vertical scroll viewer with dynamic rendering.
+- **Interactive Community**: Real-time comments and likes system powered by Neon Database.
+- **User Identity**: LocalStorage-based username persistence for seamless commenting.
+- **Modern UI**: Fully responsive dark-themed interface built with Tailwind CSS v4.
+- **Optimized Performance**: Uses Next.js Image component and dynamic server-side rendering for fast load times.
+
+## Prerequisites
+
+1. **Node.js**: Version 18 or higher.
+2. **ImageMagick**: Required for the conversion script.
+   - **Windows**: Download and install from [imagemagick.org](https://imagemagick.org/script/download.php#windows). Ensure "Add to PATH" is checked.
+   - **macOS**: `brew install imagemagick`
+   - **Linux**: `sudo apt install imagemagick`
+3. **Neon Database**: A Postgres database for storing comments and likes.
 
 ## Getting Started
 
-First, run the development server:
+### 1. Setup
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Create a `.env` file in the root directory and add your Neon database connection string:
+
+```env
+DATABASE_URL="postgresql://user:password@ep-project-123456.us-east-2.aws.neon.tech/neondb?sslmode=require"
+```
+
+### 2. Database Schema
+
+Run the following SQL commands in your Neon SQL Editor to set up the required tables:
+
+```sql
+CREATE TABLE IF NOT EXISTS comments (
+  id SERIAL PRIMARY KEY,
+  document_id TEXT NOT NULL,
+  username TEXT NOT NULL,
+  content TEXT NOT NULL,
+  parent_id INTEGER REFERENCES comments(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  likes INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS document_stats (
+  document_id TEXT PRIMARY KEY,
+  likes INTEGER DEFAULT 0
+);
+```
+
+### 3. Prepare PDFs
+
+Place all your PDF files in the `pdfs/` directory at the root of the project.
+
+### 4. Convert PDFs
+
+Run the conversion script to generate WebP images and the manifest:
+
+```bash
+npx tsx scripts/convert-pdfs.ts
+```
+
+This will:
+
+- Create a folder for each PDF in `public/documents/`.
+- Convert each page to a `.webp` file.
+- Update `src/data/manifest.json` with the document metadata.
+
+### 5. Run the Website
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view your archive.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 6. Migrate to Vercel Blob (Optional)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+If you are hosting on Vercel and have a large archive, you should migrate your images to Vercel Blob to avoid deployment size limits.
 
-## Learn More
+1. Set up a Vercel Blob store and add `BLOB_READ_WRITE_TOKEN` to your `.env` file.
+2. Run the migration script:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npx tsx scripts/migrate-to-blob.ts
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+This will upload all images to Vercel Blob and update `src/data/manifest.json` with the new URLs.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment
 
-## Deploy on Vercel
+This project is ready to be deployed on [Vercel](https://vercel.com).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Note on Large Archives**: If you have thousands of documents, the `public/` folder might become very large. For extremely large datasets, consider:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Using an external storage provider (S3, Vercel Blob).
+2. Updating the conversion script to upload to that provider.
+3. Updating the website to fetch images from the external URL.

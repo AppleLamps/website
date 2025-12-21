@@ -39,5 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-# generated images
+
+# generated images and source PDFs
 public/documents/
+pdfs/
