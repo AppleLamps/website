@@ -64,10 +64,20 @@ export default async function ViewerPage({ params }: { params: Promise<{ id: str
     }
     const pages = doc.pages;
 
-    const [comments, likes] = await Promise.all([
-        getComments(id),
-        getDocumentLikes(id)
-    ]);
+    let comments = [];
+    let likes = 0;
+
+    try {
+        const [fetchedComments, fetchedLikes] = await Promise.all([
+            getComments(id),
+            getDocumentLikes(id)
+        ]);
+        comments = fetchedComments;
+        likes = fetchedLikes;
+    } catch (error) {
+        console.error(`Failed to fetch social stats for document ${id}:`, error);
+        // Continue rendering the page without comments/likes
+    }
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">
