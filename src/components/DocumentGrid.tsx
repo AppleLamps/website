@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, ChevronDown, SortAsc, Loader2, Heart, MessageCircle } from 'lucide-react';
+import { Search, ChevronDown, SortAsc, Loader2, Heart, MessageCircle, FileText, X } from 'lucide-react';
 
 interface Document {
     id: string;
@@ -158,7 +158,7 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                         {visibleDocuments.map((doc, index) => (
                             <Link key={doc.id} href={`/viewer/${doc.id}`} className="group flex flex-col gap-2">
-                                <div className="aspect-[3/4] w-full bg-card rounded-xl overflow-hidden border border-border group-hover:border-gray-400 dark:group-hover:border-gray-600 transition-colors relative">
+                                <div className="aspect-[3/4] w-full bg-card rounded-xl overflow-hidden border border-border group-hover:border-gray-400 dark:group-hover:border-gray-600 transition-colors relative shadow-sm">
                                     <Image
                                         src={doc.thumbnail}
                                         alt={doc.title}
@@ -167,23 +167,27 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
                                         className="object-cover opacity-90 dark:opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
                                         sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
                                     />
-
-                                    {/* Overlay Stats */}
-                                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between text-xs text-white">
-                                        <div className="flex items-center gap-1">
-                                            <Heart className="w-3 h-3 fill-current" />
-                                            <span>{stats[doc.id]?.likes || 0}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <MessageCircle className="w-3 h-3 fill-current" />
-                                            <span>{stats[doc.id]?.comments || 0}</span>
-                                        </div>
-                                    </div>
                                 </div>
-                                <div className="px-1">
-                                    <h3 className="text-xs font-mono text-muted group-hover:text-foreground truncate transition-colors">
+                                <div className="px-1 space-y-1">
+                                    <h3 className="text-sm font-medium text-foreground leading-tight line-clamp-2 group-hover:text-blue-500 transition-colors">
                                         {doc.title}
                                     </h3>
+                                    <div className="flex items-center justify-between text-xs text-muted">
+                                        <div className="flex items-center gap-1" title={`${doc.pageCount} pages`}>
+                                            <FileText className="w-3 h-3" />
+                                            <span>{doc.pageCount}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-1" title={`${stats[doc.id]?.likes || 0} likes`}>
+                                                <Heart className="w-3 h-3" />
+                                                <span>{stats[doc.id]?.likes || 0}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1" title={`${stats[doc.id]?.comments || 0} comments`}>
+                                                <MessageCircle className="w-3 h-3" />
+                                                <span>{stats[doc.id]?.comments || 0}</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </Link>
                         ))}
@@ -197,9 +201,22 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
                     )}
                 </>
             ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                <div className="flex flex-col items-center justify-center py-20 text-muted">
                     <Search className="h-12 w-12 mb-4 opacity-20" />
-                    <p>No documents found matching &quot;{searchQuery}&quot;</p>
+                    <p className="text-lg font-medium mb-2">No documents found</p>
+                    <p className="text-sm mb-6">
+                        We couldn&apos;t find any matches for &quot;{searchQuery}&quot;
+                    </p>
+                    <button
+                        onClick={() => {
+                            setSearchQuery('');
+                            setVisibleCount(ITEMS_PER_PAGE);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-full text-sm font-medium hover:opacity-90 transition-opacity"
+                    >
+                        <X className="w-4 h-4" />
+                        Clear Search
+                    </button>
                 </div>
             )}
         </div>
