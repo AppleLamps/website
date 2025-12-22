@@ -6,7 +6,7 @@ import DocumentViewer from '@/components/DocumentViewer';
 import CommentSection from '@/components/CommentSection';
 import LikeButton from '@/components/LikeButton';
 import BookmarkButton from '@/components/BookmarkButton';
-import { getComments, getDocumentLikes } from '@/app/actions';
+import { getComments, getDocumentLikes, Comment } from '@/app/actions';
 import { Metadata } from 'next';
 
 interface Document {
@@ -64,7 +64,7 @@ export default async function ViewerPage({ params }: { params: Promise<{ id: str
     }
     const pages = doc.pages;
 
-    let comments = [];
+    let comments: Comment[] = [];
     let likes = 0;
 
     try {
