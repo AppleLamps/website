@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import { Heart, MessageCircle, Reply, Send, User } from 'lucide-react';
-import { Comment, addComment, likeComment } from '@/app/actions';
+import { Comment, addComment, likeComment, MAX_COMMENT_LENGTH, MAX_USERNAME_LENGTH } from '@/app/actions';
 import { formatDistanceToNow } from 'date-fns';
 
 interface CommentSectionProps {
@@ -108,8 +108,9 @@ export default function CommentSection({ documentId, initialComments }: CommentS
             setContent('');
             setReplyingTo(null);
             if (!parentId) setIsCommenting(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to post comment:', error);
+            alert(error?.message || 'Failed to post comment');
         } finally {
             setIsSubmitting(false);
         }
@@ -140,27 +141,39 @@ export default function CommentSection({ documentId, initialComments }: CommentS
                                     <span className="truncate">@{username}</span>
                                 </div>
                             ) : (
+                                <div className="relative w-1/3">
+                                    <input
+                                        type="text"
+                                        placeholder="Your X username"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        maxLength={MAX_USERNAME_LENGTH}
+                                        className={`bg-background border border-border rounded px-3 py-2 text-sm text-foreground w-full focus:outline-none ${username.trim().length > MAX_USERNAME_LENGTH ? 'border-red-500' : 'focus:border-blue-500'}`}
+                                        required
+                                    />
+                                    <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs ${username.trim().length > MAX_USERNAME_LENGTH ? 'text-red-500 font-medium' : 'text-muted'}`}>
+                                        {username.trim().length}/{MAX_USERNAME_LENGTH}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="flex-1 relative">
                                 <input
                                     type="text"
-                                    placeholder="Your X username"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    className="bg-background border border-border rounded px-3 py-2 text-sm text-foreground w-1/3 focus:outline-none focus:border-blue-500"
+                                    placeholder="Write a reply..."
+                                    value={content}
+                                    onChange={(e) => setContent(e.target.value)}
+                                    maxLength={MAX_COMMENT_LENGTH}
+                                    className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground focus:outline-none focus:border-blue-500"
                                     required
+                                    autoFocus
                                 />
-                            )}
-                            <input
-                                type="text"
-                                placeholder="Write a reply..."
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                                className="bg-background border border-border rounded px-3 py-2 text-sm text-foreground flex-1 focus:outline-none focus:border-blue-500"
-                                required
-                                autoFocus
-                            />
+                                <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs ${content.length > (MAX_COMMENT_LENGTH - 100) ? 'text-orange-500' : 'text-muted'}`}>
+                                    {content.length > (MAX_COMMENT_LENGTH - 100) && `${content.length}/${MAX_COMMENT_LENGTH}`}
+                                </span>
+                            </div>
                             <button
                                 type="submit"
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || content.length > MAX_COMMENT_LENGTH || username.trim().length > MAX_USERNAME_LENGTH}
                                 className="bg-foreground text-background hover:bg-gray-200 dark:hover:bg-gray-300 px-3 py-2 rounded text-sm disabled:opacity-50 transition-colors"
                             >
                                 <Send className="w-4 h-4" />
@@ -227,19 +240,29 @@ export default function CommentSection({ documentId, initialComments }: CommentS
                                             placeholder="elonmusk"
                                             value={username}
                                             onChange={(e) => setUsername(e.target.value)}
-                                            className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-sm text-foreground focus:outline-none focus:border-blue-500 transition-colors"
+                                            maxLength={MAX_USERNAME_LENGTH}
+                                            className={`w-full bg-background border rounded-lg pl-7 pr-10 py-2 text-sm text-foreground focus:outline-none transition-colors ${username.trim().length > MAX_USERNAME_LENGTH ? 'border-red-500' : 'border-border focus:border-blue-500'}`}
                                             required
                                         />
+                                        <span className={`absolute right-3 top-2.5 text-xs ${username.trim().length > MAX_USERNAME_LENGTH ? 'text-red-500 font-medium' : 'text-muted'}`}>
+                                            {username.trim().length}/{MAX_USERNAME_LENGTH}
+                                        </span>
                                     </div>
                                 )}
                             </div>
                             <div>
-                                <label className="block text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Comment</label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-xs text-muted uppercase tracking-wider font-semibold">Comment</label>
+                                    <span className={`text-xs ${content.length > MAX_COMMENT_LENGTH ? 'text-red-500 font-medium' : 'text-muted'}`}>
+                                        {content.length}/{MAX_COMMENT_LENGTH}
+                                    </span>
+                                </div>
                                 <textarea
                                     placeholder="What do you think about this document?"
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
-                                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground min-h-[80px] focus:outline-none focus:border-blue-500 transition-colors resize-y"
+                                    maxLength={MAX_COMMENT_LENGTH}
+                                    className={`w-full bg-background border rounded-lg px-3 py-2 text-sm text-foreground min-h-[80px] focus:outline-none transition-colors resize-y ${content.length > MAX_COMMENT_LENGTH ? 'border-red-500 focus:border-red-500' : 'border-border focus:border-blue-500'}`}
                                     required
                                 />
                             </div>
@@ -253,7 +276,7 @@ export default function CommentSection({ documentId, initialComments }: CommentS
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={isSubmitting}
+                                    disabled={isSubmitting || content.length > MAX_COMMENT_LENGTH || username.trim().length > MAX_USERNAME_LENGTH}
                                     className="bg-foreground text-background hover:bg-gray-200 dark:hover:bg-gray-300 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50 transition-colors"
                                 >
                                     {isSubmitting ? 'Posting...' : 'Post Comment'}

@@ -86,11 +86,25 @@ export async function getComments(documentId: string): Promise<Comment[]> {
     return rootComments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 }
 
+export const MAX_COMMENT_LENGTH = 1500;
+export const MAX_USERNAME_LENGTH = 20;
+
 export async function addComment(documentId: string, username: string, content: string, parentId: number | null = null) {
     if (!username || !content) return;
 
-    const sanitizedUsername = sanitize(username.trim());
-    const sanitizedContent = sanitize(content.trim());
+    const trimmedUsername = username.trim();
+    const trimmedContent = content.trim();
+
+    if (trimmedUsername.length > MAX_USERNAME_LENGTH) {
+        throw new Error(`Username must be ${MAX_USERNAME_LENGTH} characters or less`);
+    }
+
+    if (trimmedContent.length > MAX_COMMENT_LENGTH) {
+        throw new Error(`Comment must be ${MAX_COMMENT_LENGTH} characters or less`);
+    }
+
+    const sanitizedUsername = sanitize(trimmedUsername);
+    const sanitizedContent = sanitize(trimmedContent);
 
     await sql`
     INSERT INTO comments (document_id, username, content, parent_id)
