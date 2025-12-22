@@ -2,7 +2,6 @@
 
 import { neon } from '@neondatabase/serverless';
 import { revalidatePath, unstable_cache } from 'next/cache';
-import DOMPurify from 'isomorphic-dompurify';
 
 const sql = (strings: TemplateStringsArray, ...values: any[]) => {
     if (!process.env.DATABASE_URL) {
@@ -11,6 +10,16 @@ const sql = (strings: TemplateStringsArray, ...values: any[]) => {
     const db = neon(process.env.DATABASE_URL);
     return db(strings, ...values);
 };
+
+// Simple sanitization to prevent XSS - strips HTML tags
+function sanitize(input: string): string {
+    return input
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+}
 
 export interface Comment {
     id: number;
@@ -80,8 +89,8 @@ export async function getComments(documentId: string): Promise<Comment[]> {
 export async function addComment(documentId: string, username: string, content: string, parentId: number | null = null) {
     if (!username || !content) return;
 
-    const sanitizedUsername = DOMPurify.sanitize(username.trim());
-    const sanitizedContent = DOMPurify.sanitize(content.trim());
+    const sanitizedUsername = sanitize(username.trim());
+    const sanitizedContent = sanitize(content.trim());
 
     await sql`
     INSERT INTO comments (document_id, username, content, parent_id)
