@@ -7,13 +7,30 @@ interface BookmarkButtonProps {
     documentId: string;
 }
 
+// Cache to prevent infinite loops in useSyncExternalStore
+let cachedBookmarks: string[] | null = null;
+let cachedRaw: string | null = null;
+
 function readBookmarks(): string[] {
     if (typeof window === 'undefined') return [];
     try {
         const raw = window.localStorage.getItem('bookmarks');
+        
+        // Return cached result if localStorage hasn't changed
+        if (raw === cachedRaw && cachedBookmarks !== null) {
+            return cachedBookmarks;
+        }
+        
         const parsed: unknown = raw ? JSON.parse(raw) : [];
-        if (!Array.isArray(parsed)) return [];
-        return parsed.filter((v): v is string => typeof v === 'string');
+        const bookmarks = Array.isArray(parsed) 
+            ? parsed.filter((v): v is string => typeof v === 'string')
+            : [];
+        
+        // Update cache
+        cachedRaw = raw;
+        cachedBookmarks = bookmarks;
+        
+        return bookmarks;
     } catch {
         return [];
     }
@@ -23,7 +40,12 @@ export default function BookmarkButton({ documentId }: BookmarkButtonProps) {
     const subscribe = useCallback((onStoreChange: () => void) => {
         if (typeof window === 'undefined') return () => {};
 
-        const handler = () => onStoreChange();
+        const handler = () => {
+            // Invalidate cache when storage changes
+            cachedBookmarks = null;
+            cachedRaw = null;
+            onStoreChange();
+        };
         window.addEventListener('storage', handler);
         // Our app dispatches this event when it updates bookmarks.
         window.addEventListener('bookmarksUpdated', handler as EventListener);
