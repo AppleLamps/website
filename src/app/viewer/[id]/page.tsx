@@ -6,7 +6,8 @@ import DocumentViewer from '@/components/DocumentViewer';
 import CommentSection from '@/components/CommentSection';
 import LikeButton from '@/components/LikeButton';
 import BookmarkButton from '@/components/BookmarkButton';
-import { getComments, getDocumentLikes, Comment } from '@/app/actions';
+import { getComments, getDocumentLikes, trackDocumentView } from '@/app/actions';
+import type { Comment } from '@/app/shared';
 import { Metadata } from 'next';
 
 interface Document {
@@ -78,6 +79,9 @@ export default async function ViewerPage({ params }: { params: Promise<{ id: str
         console.error(`Failed to fetch social stats for document ${id}:`, error);
         // Continue rendering the page without comments/likes
     }
+
+    // Track document view (non-blocking)
+    trackDocumentView(id).catch(console.error);
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">

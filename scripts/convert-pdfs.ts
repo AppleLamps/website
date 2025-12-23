@@ -24,7 +24,7 @@ function getMagickCommand() {
                     return `"${fullPath}"`;
                 }
             }
-        } catch (e) {
+        } catch {
             // Ignore errors reading directory
         }
         return null;

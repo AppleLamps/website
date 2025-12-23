@@ -38,10 +38,23 @@ async function initDb() {
     `;
     console.log('Created document_stats table');
 
+    // Create document_views table for analytics
+    await sql`
+      CREATE TABLE IF NOT EXISTS document_views (
+        id SERIAL PRIMARY KEY,
+        document_id TEXT NOT NULL,
+        viewed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    console.log('Created document_views table');
+
     // Create Indexes
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_document_id ON comments(document_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments(parent_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at DESC)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_views_document_id ON document_views(document_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_views_viewed_at ON document_views(viewed_at DESC)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_views_document_date ON document_views(document_id, viewed_at DESC)`;
     console.log('Created database indexes');
 
     console.log('Database initialization completed successfully.');

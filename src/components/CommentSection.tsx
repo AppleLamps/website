@@ -2,7 +2,9 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import { Heart, MessageCircle, Reply, Send, User } from 'lucide-react';
-import { Comment, addComment, likeComment, MAX_COMMENT_LENGTH, MAX_USERNAME_LENGTH } from '@/app/actions';
+import type { Comment } from '@/app/shared';
+import { MAX_COMMENT_LENGTH, MAX_USERNAME_LENGTH } from '@/app/shared';
+import { addComment, likeComment } from '@/app/actions';
 import { formatDistanceToNow } from 'date-fns';
 
 interface CommentSectionProps {
@@ -32,7 +34,7 @@ function CommentItem({
         startTransition(async () => {
             try {
                 await likeComment(comment.id, documentId);
-            } catch (error) {
+            } catch {
                 setLikes(prev => prev - 1);
                 setHasLiked(false);
             }
@@ -108,9 +110,10 @@ export default function CommentSection({ documentId, initialComments }: CommentS
             setContent('');
             setReplyingTo(null);
             if (!parentId) setIsCommenting(false);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to post comment:', error);
-            alert(error?.message || 'Failed to post comment');
+            const message = error instanceof Error ? error.message : 'Failed to post comment';
+            alert(message);
         } finally {
             setIsSubmitting(false);
         }

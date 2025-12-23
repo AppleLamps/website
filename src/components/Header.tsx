@@ -13,6 +13,12 @@ export default function Header() {
                 </div>
                 <div className="flex items-center gap-4">
                     <Link
+                        href="/analytics"
+                        className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+                    >
+                        Analytics
+                    </Link>
+                    <Link
                         href="/bookmarks"
                         className="text-sm font-medium text-muted hover:text-foreground transition-colors"
                     >

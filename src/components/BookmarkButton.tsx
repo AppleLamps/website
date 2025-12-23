@@ -1,32 +1,53 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import { Bookmark } from 'lucide-react';
 
 interface BookmarkButtonProps {
     documentId: string;
 }
 
-export default function BookmarkButton({ documentId }: BookmarkButtonProps) {
-    const [isBookmarked, setIsBookmarked] = useState(false);
+function readBookmarks(): string[] {
+    if (typeof window === 'undefined') return [];
+    try {
+        const raw = window.localStorage.getItem('bookmarks');
+        const parsed: unknown = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(parsed)) return [];
+        return parsed.filter((v): v is string => typeof v === 'string');
+    } catch {
+        return [];
+    }
+}
 
-    useEffect(() => {
-        const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-        setIsBookmarked(bookmarks.includes(documentId));
-    }, [documentId]);
+export default function BookmarkButton({ documentId }: BookmarkButtonProps) {
+    const subscribe = useCallback((onStoreChange: () => void) => {
+        if (typeof window === 'undefined') return () => {};
+
+        const handler = () => onStoreChange();
+        window.addEventListener('storage', handler);
+        // Our app dispatches this event when it updates bookmarks.
+        window.addEventListener('bookmarksUpdated', handler as EventListener);
+
+        return () => {
+            window.removeEventListener('storage', handler);
+            window.removeEventListener('bookmarksUpdated', handler as EventListener);
+        };
+    }, []);
+
+    const bookmarks = useSyncExternalStore(subscribe, readBookmarks, () => []);
+    const isBookmarked = bookmarks.includes(documentId);
 
     const toggleBookmark = () => {
-        const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-        let newBookmarks;
+        const currentBookmarks = readBookmarks();
+        let newBookmarks: string[];
 
         if (isBookmarked) {
-            newBookmarks = bookmarks.filter((id: string) => id !== documentId);
+            newBookmarks = currentBookmarks.filter((id) => id !== documentId);
         } else {
-            newBookmarks = [...bookmarks, documentId];
+            newBookmarks = [...currentBookmarks, documentId];
         }
 
         localStorage.setItem('bookmarks', JSON.stringify(newBookmarks));
-        setIsBookmarked(!isBookmarked);
 
         // Dispatch a custom event so other components (like a sidebar or home page) can react
         window.dispatchEvent(new Event('bookmarksUpdated'));

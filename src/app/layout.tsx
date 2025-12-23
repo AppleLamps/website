@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import ScrollToTop from "@/components/ScrollToTop";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -49,6 +50,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <ScrollToTop />
           <Analytics />
         </ThemeProvider>
       </body>
