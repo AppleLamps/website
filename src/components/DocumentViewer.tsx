@@ -124,6 +124,7 @@ export default function DocumentViewer({ pages, title, prevId, nextId }: Documen
                         onClick={() => scrollToPage(Math.max(0, currentPage - 2))}
                         disabled={currentPage === 1}
                         className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full disabled:opacity-30 transition-colors"
+                        title="Previous Page"
                     >
                         <ChevronUp className="w-4 h-4" />
                     </button>
@@ -134,6 +135,7 @@ export default function DocumentViewer({ pages, title, prevId, nextId }: Documen
                         onClick={() => scrollToPage(Math.min(pages.length - 1, currentPage))}
                         disabled={currentPage === pages.length}
                         className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full disabled:opacity-30 transition-colors"
+                        title="Next Page"
                     >
                         <ChevronDown className="w-4 h-4" />
                     </button>
@@ -151,6 +153,7 @@ export default function DocumentViewer({ pages, title, prevId, nextId }: Documen
             </div>
 
             {/* Pages */}
+            {/* Inline styles required: width is dynamically calculated from zoom state and cannot be moved to CSS */}
             {pages.map((page, index) => (
                 <div
                     key={index}
@@ -169,8 +172,9 @@ export default function DocumentViewer({ pages, title, prevId, nextId }: Documen
                     <Image
                         src={page}
                         alt={`${title} - Page ${index + 1}`}
-                        width={1200}
-                        height={1600}
+                        width={index < 2 ? 1200 : 800}
+                        height={index < 2 ? 1600 : 1067}
+                        quality={index < 2 ? 85 : 70}
                         className="mx-auto object-contain"
                         style={{
                             width: 'auto',

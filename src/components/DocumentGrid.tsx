@@ -164,6 +164,7 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
                                         alt={doc.title}
                                         fill
                                         priority={index < PRIORITY_IMAGE_COUNT}
+                                        quality={65}
                                         className="object-cover opacity-90 dark:opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
                                         sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
                                     />

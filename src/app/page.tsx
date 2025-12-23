@@ -12,8 +12,11 @@ interface Document {
 
 const manifest = manifestData as Document[];
 
+// Revalidate every 5 minutes (matches stats cache duration)
+export const revalidate = 300;
+
 export default async function Home() {
-  // Fetch stats server-side (cached for 60 seconds)
+  // Fetch stats server-side (cached for 5 minutes)
   const stats = await getAllDocumentStats();
 
   return (

@@ -48,7 +48,7 @@ function sanitize(input: string): string {
         .replace(/'/g, '&#x27;');
 }
 
-export async function getComments(documentId: string): Promise<Comment[]> {
+async function fetchComments(documentId: string): Promise<Comment[]> {
     const comments = (await sql`
     SELECT * FROM comments 
     WHERE document_id = ${documentId} 
@@ -112,6 +112,17 @@ export async function getComments(documentId: string): Promise<Comment[]> {
     return rootComments.sort((a, b) => toDate(b.created_at).getTime() - toDate(a.created_at).getTime());
 }
 
+// Cache comments with 3 minute TTL
+const getCommentsCached = unstable_cache(
+    fetchComments,
+    ['document-comments'],
+    { revalidate: 180 }
+);
+
+export async function getComments(documentId: string): Promise<Comment[]> {
+    return getCommentsCached(documentId);
+}
+
 export async function addComment(documentId: string, username: string, content: string, parentId: number | null = null) {
     if (!username || !content) return;
 
@@ -137,11 +148,22 @@ export async function addComment(documentId: string, username: string, content: 
     revalidatePath(`/viewer/${documentId}`);
 }
 
-export async function getDocumentLikes(documentId: string): Promise<number> {
+async function fetchDocumentLikes(documentId: string): Promise<number> {
     const result = (await sql`
     SELECT likes FROM document_stats WHERE document_id = ${documentId}
   `) as unknown as SqlRow[];
     return result.length > 0 ? toInt(result[0]?.likes) : 0;
+}
+
+// Cache document likes with 5 minute TTL
+const getDocumentLikesCached = unstable_cache(
+    fetchDocumentLikes,
+    ['document-likes'],
+    { revalidate: 300 }
+);
+
+export async function getDocumentLikes(documentId: string): Promise<number> {
+    return getDocumentLikesCached(documentId);
 }
 
 export async function likeDocument(documentId: string) {
@@ -171,7 +193,7 @@ async function fetchAllDocumentStats(): Promise<Record<string, { likes: number, 
         const likesResult = (await sql`SELECT document_id, likes FROM document_stats`) as unknown as SqlRow[];
 
         const commentsResult = (await sql`
-            SELECT document_id, COUNT(*) as count 
+            SELECT document_id, COUNT(*)::int as count 
             FROM comments 
             GROUP BY document_id
         `) as unknown as SqlRow[];
@@ -197,8 +219,8 @@ async function fetchAllDocumentStats(): Promise<Record<string, { likes: number, 
     }
 }
 
-// Cache stats for 60 seconds to reduce database load
-const getAllDocumentStatsCached = unstable_cache(fetchAllDocumentStats, ['all-document-stats'], { revalidate: 60 });
+// Cache stats for 5 minutes to reduce database load (5x improvement)
+const getAllDocumentStatsCached = unstable_cache(fetchAllDocumentStats, ['all-document-stats'], { revalidate: 300 });
 
 export async function getAllDocumentStats() {
     return getAllDocumentStatsCached();
@@ -206,16 +228,49 @@ export async function getAllDocumentStats() {
 
 // ==================== ANALYTICS ====================
 
-// Track document view
+// Track document view (database-backed queue for serverless batching)
 export async function trackDocumentView(documentId: string) {
     try {
+        // Insert into queue table (fast, non-blocking)
+        // The queue will be processed by a cron job
         await sql`
-            INSERT INTO document_views (document_id)
+            INSERT INTO view_queue (document_id)
             VALUES (${documentId})
         `;
     } catch (error) {
         // Silently fail - analytics shouldn't break the app
         console.error('Failed to track view:', error);
+    }
+}
+
+// Process the view queue (called by cron job)
+export async function processViewQueue() {
+    try {
+        // First, get count of items to process
+        const countResult = (await sql`
+            SELECT COUNT(*)::int as count FROM view_queue
+        `) as unknown as SqlRow[];
+        const queueCount = toInt(countResult[0]?.count);
+        
+        if (queueCount === 0) {
+            return { processed: 0 };
+        }
+        
+        // Batch insert all queued views into document_views
+        await sql`
+            INSERT INTO document_views (document_id, viewed_at)
+            SELECT document_id, queued_at
+            FROM view_queue
+            ORDER BY queued_at ASC
+        `;
+        
+        // Delete all processed items from queue
+        await sql`DELETE FROM view_queue`;
+        
+        return { processed: queueCount };
+    } catch (error) {
+        console.error('Failed to process view queue:', error);
+        throw error;
     }
 }
 
@@ -259,20 +314,20 @@ export async function getMostViewedDocuments(limit: number = 10): Promise<Docume
         const result = (await sql`
             SELECT 
                 v.document_id,
-                COUNT(*) as views,
-                COALESCE(ds.likes, 0) as likes,
-                COALESCE(comment_counts.comments, 0) as comments,
-                COALESCE(reply_counts.replies, 0) as comment_replies
+                COUNT(*)::int as views,
+                COALESCE(ds.likes, 0)::int as likes,
+                COALESCE(comment_counts.comments, 0)::int as comments,
+                COALESCE(reply_counts.replies, 0)::int as comment_replies
             FROM document_views v
             LEFT JOIN document_stats ds ON v.document_id = ds.document_id
             LEFT JOIN (
-                SELECT document_id, COUNT(*) as comments
+                SELECT document_id, COUNT(*)::int as comments
                 FROM comments
                 WHERE parent_id IS NULL
                 GROUP BY document_id
             ) comment_counts ON v.document_id = comment_counts.document_id
             LEFT JOIN (
-                SELECT document_id, COUNT(*) as replies
+                SELECT document_id, COUNT(*)::int as replies
                 FROM comments
                 WHERE parent_id IS NOT NULL
                 GROUP BY document_id

@@ -101,7 +101,7 @@ export default function TimeSeriesChart({ data, period }: TimeSeriesChartProps) 
 
                 return (
                     <div key={index} className="flex-1 flex flex-col items-center group relative min-w-[40px]">
-                        {/* Note: Inline styles required for dynamic chart heights based on data values */}
+                        {/* Inline styles required: height values are dynamically calculated from data and cannot be moved to CSS */}
                         <div className="w-full flex gap-0.5 items-end justify-center h-full">
                             <div
                                 className="flex-1 bg-blue-500 rounded-t transition-all hover:opacity-80 cursor-pointer"

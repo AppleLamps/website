@@ -41,11 +41,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     };
 }
 
-// export async function generateStaticParams() {
-//     return manifest.map((doc) => ({
-//         id: doc.id,
-//     }));
-// }
+// Enable static generation for all documents
+export async function generateStaticParams() {
+    return manifest.map((doc) => ({
+        id: doc.id,
+    }));
+}
+
+// Use ISR with 1 hour revalidation
+export const revalidate = 3600;
 
 export default async function ViewerPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;

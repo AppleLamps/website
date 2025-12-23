@@ -48,6 +48,16 @@ async function initDb() {
     `;
     console.log('Created document_views table');
 
+    // Create view_queue table for batched analytics processing
+    await sql`
+      CREATE TABLE IF NOT EXISTS view_queue (
+        id SERIAL PRIMARY KEY,
+        document_id TEXT NOT NULL,
+        queued_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    console.log('Created view_queue table');
+
     // Create Indexes
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_document_id ON comments(document_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments(parent_id)`;
@@ -55,6 +65,7 @@ async function initDb() {
     await sql`CREATE INDEX IF NOT EXISTS idx_views_document_id ON document_views(document_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_views_viewed_at ON document_views(viewed_at DESC)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_views_document_date ON document_views(document_id, viewed_at DESC)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_view_queue_queued_at ON view_queue(queued_at)`;
     console.log('Created database indexes');
 
     console.log('Database initialization completed successfully.');

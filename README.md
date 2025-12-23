@@ -56,6 +56,30 @@ CREATE TABLE IF NOT EXISTS document_stats (
   document_id TEXT PRIMARY KEY,
   likes INTEGER DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS document_views (
+  id SERIAL PRIMARY KEY,
+  document_id TEXT NOT NULL,
+  viewed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS view_queue (
+  id SERIAL PRIMARY KEY,
+  document_id TEXT NOT NULL,
+  queued_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Or run the initialization script:**
+
+```bash
+npx tsx scripts/init-db.ts
+```
+
+**If you already have a database, add the queue table:**
+
+```bash
+npx tsx scripts/add-view-queue-table.ts
 ```
 
 ### 3. Prepare PDFs
@@ -99,9 +123,30 @@ npx tsx scripts/migrate-to-blob.ts
 
 This will upload all images to Vercel Blob and update `src/data/manifest.json` with the new URLs.
 
+## Analytics & Performance Optimizations
+
+This project includes several optimizations to reduce Vercel costs:
+
+- **Database-backed Analytics Queue**: View tracking uses a queue table that's processed by a cron job, reducing function invocations by batching analytics writes.
+- **Extended Caching**: Stats and queries are cached for 5 minutes instead of 60 seconds.
+- **Image Optimization**: Reduced image quality settings and extended cache TTL for thumbnails.
+- **Static Generation**: Viewer pages use ISR (Incremental Static Regeneration) with 1-hour revalidation.
+
+### Setting up the Analytics Queue Cron Job
+
+The analytics queue is automatically processed by a Vercel Cron Job configured in `vercel.json`. The cron job runs every minute to batch process view analytics.
+
+**Optional**: Add a `CRON_SECRET` environment variable in Vercel for additional security:
+
+```env
+CRON_SECRET="your-secret-key-here"
+```
+
 ## Deployment
 
 This project is ready to be deployed on [Vercel](https://vercel.com).
+
+The `vercel.json` file includes cron job configuration that will be automatically set up on deployment.
 
 **Note on Large Archives**: If you have thousands of documents, the `public/` folder might become very large. For extremely large datasets, consider:
 
