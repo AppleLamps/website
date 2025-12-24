@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Github } from 'lucide-react';
+import { Github, BarChart2, Bookmark } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
 export default function Header() {
@@ -7,22 +7,27 @@ export default function Header() {
         <header className="sticky top-0 z-50 w-full border-b border-border bg-background/50 backdrop-blur-xl">
             <div className="container flex h-16 items-center justify-between px-4 md:px-6">
                 <div className="flex items-center gap-2">
-                    <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight text-foreground">
-                        Epstein Files Browser
+                    <Link href="/" className="flex items-center gap-2 font-bold text-lg sm:text-xl tracking-tight text-foreground">
+                        <span className="sm:hidden">Epstein Files</span>
+                        <span className="hidden sm:inline">Epstein Files Browser</span>
                     </Link>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                     <Link
                         href="/analytics"
-                        className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+                        className="text-sm font-medium text-muted hover:text-foreground transition-colors flex items-center gap-2"
+                        title="Analytics"
                     >
-                        Analytics
+                        <BarChart2 className="h-5 w-5 sm:hidden" />
+                        <span className="hidden sm:inline">Analytics</span>
                     </Link>
                     <Link
                         href="/bookmarks"
-                        className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+                        className="text-sm font-medium text-muted hover:text-foreground transition-colors flex items-center gap-2"
+                        title="Bookmarks"
                     >
-                        Bookmarks
+                        <Bookmark className="h-5 w-5 sm:hidden" />
+                        <span className="hidden sm:inline">Bookmarks</span>
                     </Link>
                     <ThemeToggle />
                     <Link

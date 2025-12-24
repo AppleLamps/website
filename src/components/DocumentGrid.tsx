@@ -24,6 +24,7 @@ const PRIORITY_IMAGE_COUNT = 6;
 export default function DocumentGrid({ documents, initialStats }: DocumentGridProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'name' | 'pages' | 'likes' | 'comments'>('name');
+    const [isSortOpen, setIsSortOpen] = useState(false);
     // Use initialStats if provided (server-side), otherwise default to empty object
     const stats = useMemo(() => initialStats ?? {}, [initialStats]);
 
@@ -31,6 +32,7 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
     const filteredLengthRef = useRef(0);
     const observerRef = useRef<IntersectionObserver | null>(null);
+    const sortRef = useRef<HTMLDivElement>(null);
 
     const filteredDocuments = useMemo(() => {
         const docs = documents.filter((doc) =>
@@ -88,6 +90,20 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
         };
     }, []);
 
+    // Handle click outside for sort dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
+                setIsSortOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     const visibleDocuments = useMemo(() => {
         return filteredDocuments.slice(0, visibleCount);
     }, [filteredDocuments, visibleCount]);
@@ -100,6 +116,7 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
     const handleSortChange = (newSort: 'name' | 'pages' | 'likes' | 'comments') => {
         setSortBy(newSort);
         setVisibleCount(ITEMS_PER_PAGE);
+        setIsSortOpen(false);
     };
 
     return (
@@ -122,8 +139,9 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                    <div className="relative group">
+                    <div className="relative" ref={sortRef}>
                         <button
+                            onClick={() => setIsSortOpen(!isSortOpen)}
                             className="flex items-center gap-2 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222] transition-colors"
                         >
                             <SortAsc className="h-4 w-4" />
@@ -133,17 +151,19 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
                                 {sortBy === 'likes' && 'Most Liked'}
                                 {sortBy === 'comments' && 'Most Discussed'}
                             </span>
-                            <ChevronDown className="h-3 w-3 opacity-50" />
+                            <ChevronDown className={`h-3 w-3 opacity-50 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
                         </button>
 
-                        <div className="absolute right-0 top-full pt-2 w-48 hidden group-hover:block z-50">
-                            <div className="bg-card border border-border rounded-lg shadow-xl overflow-hidden">
-                                <button onClick={() => handleSortChange('name')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Name</button>
-                                <button onClick={() => handleSortChange('pages')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Page Count</button>
-                                <button onClick={() => handleSortChange('likes')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Most Liked</button>
-                                <button onClick={() => handleSortChange('comments')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Most Discussed</button>
+                        {isSortOpen && (
+                            <div className="absolute right-0 top-full pt-2 w-48 z-50">
+                                <div className="bg-card border border-border rounded-lg shadow-xl overflow-hidden">
+                                    <button onClick={() => handleSortChange('name')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Name</button>
+                                    <button onClick={() => handleSortChange('pages')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Page Count</button>
+                                    <button onClick={() => handleSortChange('likes')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Most Liked</button>
+                                    <button onClick={() => handleSortChange('comments')} className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-100 dark:hover:bg-[#222]">Most Discussed</button>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     <div className="px-3 py-2 bg-background border border-border rounded-lg text-sm font-mono text-muted">

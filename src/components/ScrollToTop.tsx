@@ -2,9 +2,14 @@
 
 import { ArrowUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function ScrollToTop() {
     const [isVisible, setIsVisible] = useState(false);
+    const pathname = usePathname();
+
+    // Hide on viewer pages to avoid conflict with viewer controls
+    const isViewerPage = pathname?.startsWith('/viewer');
 
     useEffect(() => {
         const onScroll = () => {
@@ -17,6 +22,8 @@ export default function ScrollToTop() {
         window.addEventListener('scroll', onScroll, { passive: true });
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
+
+    if (isViewerPage) return null;
 
     return (
         <button
