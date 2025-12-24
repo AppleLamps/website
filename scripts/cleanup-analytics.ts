@@ -181,7 +181,7 @@ async function main() {
 
     try {
       choice = await question('\nEnter your choice (1-6): ');
-    } catch (error) {
+    } catch {
       console.error('\nError reading input. Please run with an argument: npm run cleanup-analytics -- 4');
       if (!isReadlineClosed) {
         rl.close();
