@@ -41,14 +41,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     };
 }
 
-// Enable static generation for all documents
-export async function generateStaticParams() {
-    return manifest.map((doc) => ({
-        id: doc.id,
-    }));
-}
-
-// Use ISR with 1 hour revalidation
+// Use on-demand ISR instead of pre-generating all 10k+ pages at build time.
+// Pages are generated on first request and cached for 1 hour.
+// This dramatically reduces build time while maintaining good performance.
+export const dynamicParams = true;
 export const revalidate = 3600;
 
 export default async function ViewerPage({ params }: { params: Promise<{ id: string }> }) {
