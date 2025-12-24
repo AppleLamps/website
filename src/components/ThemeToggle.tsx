@@ -2,16 +2,17 @@
 
 import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+// Hydration-safe mounted check using useSyncExternalStore
+const subscribe = () => () => {};
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 export default function ThemeToggle() {
     const { resolvedTheme, setTheme } = useTheme();
     const isDark = resolvedTheme === 'dark';
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
     return (
         <button
