@@ -19,7 +19,7 @@ const rl = readline.createInterface({
 
 function question(query: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    if (rl.closed) {
+    if ((rl as any).closed) {
       reject(new Error('Readline interface is closed'));
       return;
     }
@@ -61,7 +61,7 @@ async function showStats() {
     
     if (topViews.length > 0) {
       console.log('\n  Top 5 Most Viewed Documents:');
-      topViews.forEach((doc: { document_id: string; views: number }, i: number) => {
+      topViews.forEach((doc: any, i: number) => {
         console.log(`    ${i + 1}. ${doc.document_id}: ${doc.views.toLocaleString()} views`);
       });
     }
@@ -175,7 +175,7 @@ async function main() {
       choice = await question('\nEnter your choice (1-6): ');
     } catch (error) {
       console.error('\nError reading input. Please run with an argument: npm run cleanup-analytics -- 4');
-      if (!rl.closed) {
+      if (!(rl as any).closed) {
         rl.close();
       }
       process.exit(1);
@@ -192,7 +192,7 @@ async function main() {
           confirm1 = await question('\n⚠️  Are you sure you want to delete all view analytics? (yes/no): ');
         } catch {
           console.log('\n⚠️  Interactive mode not available. Use: npm run cleanup-analytics -- 1 --yes');
-          if (!rl.closed) rl.close();
+          if (!(rl as any).closed) rl.close();
           process.exit(1);
         }
       }
@@ -213,7 +213,7 @@ async function main() {
           confirm2 = await question('\n⚠️  Are you sure you want to delete all comments? (yes/no): ');
         } catch {
           console.log('\n⚠️  Interactive mode not available. Use: npm run cleanup-analytics -- 2 --yes');
-          if (!rl.closed) rl.close();
+          if (!(rl as any).closed) rl.close();
           process.exit(1);
         }
       }
@@ -234,7 +234,7 @@ async function main() {
           confirm3 = await question('\n⚠️  Are you sure you want to delete all likes? (yes/no): ');
         } catch {
           console.log('\n⚠️  Interactive mode not available. Use: npm run cleanup-analytics -- 3 --yes');
-          if (!rl.closed) rl.close();
+          if (!(rl as any).closed) rl.close();
           process.exit(1);
         }
       }
@@ -256,7 +256,7 @@ async function main() {
           confirm4 = await question('\n⚠️  ⚠️  WARNING: This will delete ALL analytics data (views, comments, and likes). Are you sure? (yes/no): ');
         } catch {
           console.log('\n⚠️  Interactive mode not available. Use: npm run cleanup-analytics -- 4 --yes');
-          if (!rl.closed) rl.close();
+          if (!(rl as any).closed) rl.close();
           process.exit(1);
         }
       }
@@ -280,7 +280,7 @@ async function main() {
       console.log('Invalid choice. Exiting...');
   }
 
-  if (!rl.closed) {
+  if (!(rl as any).closed) {
     rl.close();
   }
   process.exit(0);
@@ -288,7 +288,7 @@ async function main() {
 
 main().catch((error) => {
   console.error('Fatal error:', error);
-  if (!rl.closed) {
+  if (!(rl as any).closed) {
     rl.close();
   }
   process.exit(1);
