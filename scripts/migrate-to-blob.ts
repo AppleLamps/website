@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const MANIFEST_PATH = path.join(process.cwd(), 'src/data/manifest.json');
-const DOCUMENTS_DIR = path.join(process.cwd(), 'public/documents');
+const DOCUMENTS_DIR = path.join(process.cwd(), 'pics');
 
 interface Document {
     id: string;
