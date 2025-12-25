@@ -72,9 +72,9 @@ function generateHomeStructuredData() {
       position: index + 1,
       item: {
         '@type': 'DigitalDocument',
-        '@id': `${BASE_URL}/viewer/${doc.id}`,
+        '@id': `${BASE_URL}/files/${doc.id}`,
         name: `Document ${doc.id}`,
-        url: `${BASE_URL}/viewer/${doc.id}`,
+        url: `${BASE_URL}/files/${doc.id}`,
         thumbnailUrl: doc.thumbnail,
         numberOfPages: doc.pageCount,
       },

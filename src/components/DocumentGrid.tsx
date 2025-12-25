@@ -18,17 +18,14 @@ interface DocumentGridProps {
 }
 
 const ITEMS_PER_PAGE = 24;
-// Number of images to load with priority (above the fold)
 const PRIORITY_IMAGE_COUNT = 6;
 
 export default function DocumentGrid({ documents, initialStats }: DocumentGridProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'name' | 'pages' | 'likes' | 'comments'>('name');
     const [isSortOpen, setIsSortOpen] = useState(false);
-    // Use initialStats if provided (server-side), otherwise default to empty object
     const stats = useMemo(() => initialStats ?? {}, [initialStats]);
 
-    // Infinite scroll state
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
     const filteredLengthRef = useRef(0);
     const observerRef = useRef<IntersectionObserver | null>(null);
@@ -53,12 +50,10 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
         return docs;
     }, [documents, searchQuery, sortBy, stats]);
 
-    // Update ref when filtered documents change
     useEffect(() => {
         filteredLengthRef.current = filteredDocuments.length;
     }, [filteredDocuments.length]);
 
-    // Keep the observer callback stable, but always read latest values from refs.
     const setObserverTarget = useCallback((node: HTMLDivElement | null) => {
         if (observerRef.current) {
             observerRef.current.disconnect();
@@ -90,7 +85,6 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
         };
     }, []);
 
-    // Handle click outside for sort dropdown
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
@@ -121,7 +115,6 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
 
     return (
         <div className="space-y-6">
-            {/* Toolbar */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card p-4 rounded-xl border border-border sm:sticky sm:top-20 sm:z-40 shadow-xl shadow-black/5 backdrop-blur-sm bg-card/90">
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <div className="relative flex-1 sm:w-64">
@@ -172,12 +165,11 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
                 </div>
             </div>
 
-            {/* Grid */}
             {visibleDocuments.length > 0 ? (
                 <>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                         {visibleDocuments.map((doc, index) => (
-                            <Link key={doc.id} href={`/viewer/${doc.id}`} className="group flex flex-col gap-2">
+                            <Link key={doc.id} href={`/files/${doc.id}`} className="group flex flex-col gap-2">
                                 <div className="aspect-[3/4] w-full bg-card rounded-xl overflow-hidden border border-border group-hover:border-gray-400 dark:group-hover:border-gray-600 transition-colors relative shadow-sm">
                                     <Image
                                         src={doc.thumbnail}
@@ -214,7 +206,6 @@ export default function DocumentGrid({ documents, initialStats }: DocumentGridPr
                         ))}
                     </div>
 
-                    {/* Loading trigger / indicator */}
                     {visibleCount < filteredDocuments.length && (
                         <div ref={setObserverTarget} className="flex justify-center py-8">
                             <Loader2 className="h-8 w-8 animate-spin text-gray-500" />

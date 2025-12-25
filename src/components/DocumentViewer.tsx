@@ -11,18 +11,20 @@ interface DocumentViewerProps {
     title: string;
     prevId?: string;
     nextId?: string;
+    routeBase?: string;
 }
 
-export default function DocumentViewer({ pages, title, prevId, nextId }: DocumentViewerProps) {
+export default function DocumentViewer({ pages, title, prevId, nextId, routeBase }: DocumentViewerProps) {
     const router = useRouter();
+    const base = routeBase ?? '/viewer';
     const [zoom, setZoom] = useState(1);
     const [currentPage, setCurrentPage] = useState(1);
     const [copied, setCopied] = useState(false);
     const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
     const handlers = useSwipeable({
-        onSwipedLeft: () => nextId && router.push(`/viewer/${nextId}`),
-        onSwipedRight: () => prevId && router.push(`/viewer/${prevId}`),
+        onSwipedLeft: () => nextId && router.push(`${base}/${nextId}`),
+        onSwipedRight: () => prevId && router.push(`${base}/${prevId}`),
         preventScrollOnSwipe: true,
         trackMouse: true,
     });
@@ -64,7 +66,6 @@ export default function DocumentViewer({ pages, title, prevId, nextId }: Documen
     // Keyboard navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Ignore if typing in an input or textarea
             if (
                 document.activeElement?.tagName === 'INPUT' ||
                 document.activeElement?.tagName === 'TEXTAREA' ||
@@ -74,15 +75,15 @@ export default function DocumentViewer({ pages, title, prevId, nextId }: Documen
             }
 
             if (e.key === 'ArrowRight' && nextId) {
-                router.push(`/viewer/${nextId}`);
+                router.push(`${base}/${nextId}`);
             } else if (e.key === 'ArrowLeft' && prevId) {
-                router.push(`/viewer/${prevId}`);
+                router.push(`${base}/${prevId}`);
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [nextId, prevId, router]);
+    }, [nextId, prevId, router, base]);
 
     // Update current page on scroll
     useEffect(() => {
@@ -162,7 +163,7 @@ export default function DocumentViewer({ pages, title, prevId, nextId }: Documen
                     className="relative bg-white shadow-2xl rounded-sm overflow-hidden transition-all duration-200 ease-out origin-top"
                     style={{
                         width: `${100 * zoom}%`,
-                        maxWidth: '100%', // Prevent overflow on small screens unless zoomed
+                        maxWidth: '100%',
                         minWidth: '300px'
                     }}
                 >
