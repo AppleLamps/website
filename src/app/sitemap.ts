@@ -11,7 +11,6 @@ interface Document {
 const manifest = manifestData as Document[];
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://epstein-files.com';
-const STATIC_BUILD_COUNT = 2000;
 
 export default function sitemap(): MetadataRoute.Sitemap {
     const staticPages: MetadataRoute.Sitemap = [
@@ -35,7 +34,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         },
     ];
 
-    const documentPages: MetadataRoute.Sitemap = manifest.slice(0, STATIC_BUILD_COUNT).map((doc) => {
+    const documentPages: MetadataRoute.Sitemap = manifest.map((doc) => {
         const basePriority = 0.6;
         const pageBonus = Math.min(doc.pageCount / 50, 1) * 0.3;
         const priority = Math.round((basePriority + pageBonus) * 10) / 10;
