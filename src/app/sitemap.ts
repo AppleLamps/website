@@ -10,7 +10,7 @@ interface Document {
 
 const manifest = manifestData as Document[];
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://epstein-files.com';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://epsteinphotos.vercel.app';
 
 export default function sitemap(): MetadataRoute.Sitemap {
     const staticPages: MetadataRoute.Sitemap = [
