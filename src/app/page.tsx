@@ -13,7 +13,7 @@ interface Document {
 
 const manifest = manifestData as Document[];
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://epstein-files.com';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://epsteinphotos.vercel.app';
 
 // Calculate total pages across all documents
 const totalPages = manifest.reduce((sum, doc) => sum + doc.pageCount, 0);

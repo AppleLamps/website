@@ -18,7 +18,7 @@ interface Document {
 
 const manifest = manifestData as Document[];
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://epstein-files.com';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://epsteinphotos.vercel.app';
 const DOJ_SOURCE_URL = 'https://www.justice.gov/usao-sdny/united-states-v-ghislaine-maxwell';
 
 const STATIC_BUILD_COUNT = 2000;
